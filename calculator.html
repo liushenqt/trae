@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>计算器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f3f3f3;--surface:#fafafa;--card:#ffffff;--text:#1a1a1a;--text2:#616161;
+  --btn-bg:#f9f9f9;--btn-hover:#f0f0f0;--btn-active:#e0e0e0;
+  --op-bg:#f9f9f9;--op-hover:#f0f0f0;--op-active:#d0d0d0;
+  --eq-bg:#0067c0;--eq-hover:#1a75c7;--eq-active:#005a9e;--eq-text:#fff;
+  --mem-bg:#f9f9f9;--mem-hover:#f0f0f0;--mem-active:#e0e0e0;
+  --border:#e0e0e0;--divider=#e5e5e5;
+  --shadow:0 2px 8px rgba(0,0,0,0.08);
+  --radius:6px;
+}
+[data-theme="dark"]{
+  --bg:#202020;--surface:#2d2d2d;--card:#323232;--text:#fff;--text2:#aaa;
+  --btn-bg:#3b3b3b;--btn-hover:#444;--btn-active:#555;
+  --op-bg:#3b3b3b;--op-hover:#444;--op-active:#555;
+  --eq-bg:#0067c0;--eq-hover:#1a75c7;--eq-active:#005a9e;--eq-text:#fff;
+  --mem-bg:#3b3b3b;--mem-hover:#444;--mem-active:#555;
+  --border:#555;--divider:#444;
+  --shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+html,body{height:100%;font-family:'Segoe UI Variable','Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;max-width:560px;margin:0 auto;background:var(--surface);position:relative}
+
+.header{display:flex;align-items:center;padding:8px 12px;gap:8px;user-select:none}
+.header .title{font-size:13px;font-weight:600;color:var(--text);flex:1}
+.header-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px}
+.header-btn:hover{background:var(--btn-hover);color:var(--text)}
+.header-btn.active{color:var(--text);font-weight:600}
+
+.mode-tabs{display:flex;padding:0 12px;gap:2px;margin-bottom:4px}
+.mode-tab{padding:6px 16px;border:none;background:none;color:var(--text2);cursor:pointer;border-radius:4px;font-size:12px;font-weight:500;transition:all .15s}
+.mode-tab:hover{background:var(--btn-hover);color:var(--text)}
+.mode-tab.active{background:var(--btn-active);color:var(--text);font-weight:600}
+
+.display{padding:8px 20px 12px;text-align:right;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end}
+.expression{font-size:14px;color:var(--text2);min-height:22px;word-break:break-all;line-height:1.4;margin-bottom:4px}
+.result{font-size:48px;font-weight:600;color:var(--text);line-height:1.1;word-break:break-all;transition:font-size .15s}
+.result.small{font-size:36px}
+.result.smaller{font-size:28px}
+
+.memory-bar{display:flex;padding:0 8px;gap:2px;margin-bottom:4px}
+.mem-btn{flex:1;padding:4px;border:none;background:none;color:var(--text2);cursor:pointer;border-radius:4px;font-size:11px;font-weight:500;transition:all .1s}
+.mem-btn:hover{background:var(--mem-hover);color:var(--text)}
+.mem-btn:active{background:var(--mem-active)}
+.mem-btn:disabled{opacity:.4;cursor:default}
+.mem-btn:disabled:hover{background:none;color:var(--text2)}
+.mem-indicator{font-size:10px;color:var(--text2);padding:0 20px 4px;min-height:16px}
+
+.keypad{flex:1;display:flex;flex-direction:column;padding:4px 8px 8px;gap:4px}
+.keypad-row{display:flex;gap:4px;flex:1}
+.key{flex:1;border:none;border-radius:var(--radius);font-size:16px;font-weight:500;cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;user-select:none;position:relative}
+.key:active{transform:scale(0.97)}
+.key-num{background:var(--btn-bg);color:var(--text)}
+.key-num:hover{background:var(--btn-hover)}
+.key-num:active{background:var(--btn-active)}
+.key-op{background:var(--op-bg);color:var(--text)}
+.key-op:hover{background:var(--op-hover)}
+.key-op:active{background:var(--op-active)}
+.key-eq{background:var(--eq-bg);color:var(--eq-text);font-size:20px;font-weight:700}
+.key-eq:hover{background:var(--eq-hover)}
+.key-eq:active{background:var(--eq-active)}
+.key-func{background:var(--btn-bg);color:var(--text);font-size:14px}
+.key-func:hover{background:var(--btn-hover)}
+.key-func:active{background:var(--btn-active)}
+.key-sci{background:var(--btn-bg);color:var(--text);font-size:13px}
+.key-sci:hover{background:var(--btn-hover)}
+.key-sci:active{background:var(--btn-active)}
+
+.sci-panel{display:none;padding:4px 8px;gap:4px;flex-direction:column}
+.sci-panel.visible{display:flex}
+.sci-row{display:flex;gap:4px}
+.sci-row .key{flex:1;height:36px;font-size:12px}
+
+.history-panel{position:absolute;right:0;top:0;bottom:0;width:280px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .25s ease;z-index:10;display:flex;flex-direction:column}
+.history-panel.open{transform:translateX(0)}
+.history-header{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.history-header span{flex:1;font-size:13px;font-weight:600}
+.history-close{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px}
+.history-close:hover{background:var(--btn-hover)}
+.history-list{flex:1;overflow-y:auto;padding:8px}
+.history-item{padding:8px 12px;border-radius:4px;cursor:pointer;margin-bottom:2px}
+.history-item:hover{background:var(--btn-hover)}
+.history-expr{font-size:12px;color:var(--text2)}
+.history-result{font-size:16px;font-weight:500;color:var(--text)}
+.history-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px}
+.history-actions{padding:8px 16px;border-top:1px solid var(--border)}
+.history-actions button{width:100%;padding:6px;border:none;background:none;color:var(--text2);cursor:pointer;border-radius:4px;font-size:12px}
+.history-actions button:hover{background:var(--btn-hover);color:var(--text)}
+
+.nav-menu{position:absolute;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);transform:translateX(-100%);transition:transform .25s ease;z-index:10;display:flex;flex-direction:column}
+.nav-menu.open{transform:translateX(0)}
+.nav-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:9;display:none}
+.nav-overlay.open{display:block}
+.nav-header{padding:16px;font-size:14px;font-weight:600;border-bottom:1px solid var(--border)}
+.nav-item{padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:10px}
+.nav-item:hover{background:var(--btn-hover);color:var(--text)}
+.nav-item.active{color:var(--text);font-weight:600;background:var(--btn-hover)}
+.nav-item svg{width:16px;height:16px;fill:currentColor}
+
+.theme-toggle{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:14px}
+.theme-toggle:hover{background:var(--btn-hover);color:var(--text)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.key{animation:fadeIn .15s ease}
+
+@media(max-width:400px){
+  .result{font-size:36px}
+  .result.small{font-size:28px}
+  .result.smaller{font-size:22px}
+  .key{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="nav-overlay" id="navOverlay" onclick="toggleNav(false)"></div>
+  <nav class="nav-menu" id="navMenu">
+    <div class="nav-header">计算器</div>
+    <div class="nav-item active" onclick="setMode('standard')">
+      <svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="3.5" width="9" height="3" rx="1" fill="currentColor"/><circle cx="5" cy="9.5" r="1" fill="currentColor"/><circle cx="8" cy="9.5" r="1" fill="currentColor"/><circle cx="11" cy="9.5" r="1" fill="currentColor"/><circle cx="5" cy="12.5" r="1" fill="currentColor"/><circle cx="8" cy="12.5" r="1" fill="currentColor"/><circle cx="11" cy="12.5" r="1" fill="currentColor"/></svg>
+      标准
+    </div>
+    <div class="nav-item" onclick="setMode('scientific')">
+      <svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="8" y="11" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">fx</text></svg>
+      科学
+    </div>
+  </nav>
+
+  <div class="header">
+    <button class="header-btn" onclick="toggleNav(true)" title="菜单">☰</button>
+    <span class="title" id="modeTitle">标准</span>
+    <button class="header-btn" onclick="toggleHistory()" id="historyBtn" title="历史记录">🕐</button>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="切换主题">🌙</button>
+
+  <div class="display">
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <div class="mem-indicator" id="memIndicator"></div>
+
+  <div class="memory-bar">
+    <button class="mem-btn" id="mcBtn" onclick="memClear()" disabled>MC</button>
+    <button class="mem-btn" id="mrBtn" onclick="memRecall()" disabled>MR</button>
+    <button class="mem-btn" id="mplusBtn" onclick="memAdd()">M+</button>
+    <button class="mem-btn" id="mminusBtn" onclick="memSub()">M−</button>
+    <button class="mem-btn" id="msBtn" onclick="memStore()">MS</button>
+    <button class="mem-btn" id="mviewBtn" onclick="toggleMemView()">M▾</button>
+  </div>
+
+  <div class="sci-panel" id="sciPanel">
+    <div class="sci-row">
+      <button class="key key-sci" onclick="inputSci('x²')">x²</button>
+      <button class="key key-sci" onclick="inputSci('x³')">x³</button>
+      <button class="key key-sci" onclick="inputSci('xⁿ')">xⁿ</button>
+      <button class="key key-sci" onclick="inputSci('10ˣ')">10ˣ</button>
+      <button class="key key-sci" onclick="inputSci('eˣ')">eˣ</button>
+    </div>
+    <div class="sci-row">
+      <button class="key key-sci" onclick="inputSci('1/x')">1/x</button>
+      <button class="key key-sci" onclick="inputSci('2√x')">²√x</button>
+      <button class="key key-sci" onclick="inputSci('n√x')">ⁿ√x</button>
+      <button class="key key-sci" onclick="inputSci('ln')">ln</button>
+      <button class="key key-sci" onclick="inputSci('log')">log</button>
+    </div>
+    <div class="sci-row">
+      <button class="key key-sci" onclick="inputSci('n!')">n!</button>
+      <button class="key key-sci" onclick="inputSci('sin')">sin</button>
+      <button class="key key-sci" onclick="inputSci('cos')">cos</button>
+      <button class="key key-sci" onclick="inputSci('tan')">tan</button>
+      <button class="key key-sci" onclick="inputSci('π')">π</button>
+    </div>
+    <div class="sci-row">
+      <button class="key key-sci" onclick="inputSci('|x|')">|x|</button>
+      <button class="key key-sci" onclick="inputSci('sinh')">sinh</button>
+      <button class="key key-sci" onclick="inputSci('cosh')">cosh</button>
+      <button class="key key-sci" onclick="inputSci('tanh')">tanh</button>
+      <button class="key key-sci" onclick="inputSci('e')">e</button>
+    </div>
+    <div class="sci-row" style="margin-bottom:4px">
+      <button class="key key-sci" onclick="inputSci('floor')">⌊x⌋</button>
+      <button class="key key-sci" onclick="inputSci('ceil')">⌈x⌉</button>
+      <button class="key key-sci" onclick="inputSci('Rand')">Rand</button>
+      <button class="key key-sci" onclick="inputSci('dms')">dms</button>
+      <button class="key key-sci" onclick="inputSci('deg')">deg</button>
+    </div>
+  </div>
+
+  <div class="keypad" id="keypad">
+    <div class="keypad-row">
+      <button class="key key-func" onclick="inputPercent()">%</button>
+      <button class="key key-func" onclick="inputCE()">CE</button>
+      <button class="key key-func" onclick="inputClear()">C</button>
+      <button class="key key-func" onclick="inputBackspace()">⌫</button>
+    </div>
+    <div class="keypad-row">
+      <button class="key key-func" onclick="inputReciprocal()">1/x</button>
+      <button class="key key-func" onclick="inputSquare()">x²</button>
+      <button class="key key-func" onclick="inputSqrt()">²√x</button>
+      <button class="key key-op" onclick="inputOp('÷')">÷</button>
+    </div>
+    <div class="keypad-row">
+      <button class="key key-num" onclick="inputDigit('7')">7</button>
+      <button class="key key-num" onclick="inputDigit('8')">8</button>
+      <button class="key key-num" onclick="inputDigit('9')">9</button>
+      <button class="key key-op" onclick="inputOp('×')">×</button>
+    </div>
+    <div class="keypad-row">
+      <button class="key key-num" onclick="inputDigit('4')">4</button>
+      <button class="key key-num" onclick="inputDigit('5')">5</button>
+      <button class="key key-num" onclick="inputDigit('6')">6</button>
+      <button class="key key-op" onclick="inputOp('−')">−</button>
+    </div>
+    <div class="keypad-row">
+      <button class="key key-num" onclick="inputDigit('1')">1</button>
+      <button class="key key-num" onclick="inputDigit('2')">2</button>
+      <button class="key key-num" onclick="inputDigit('3')">3</button>
+      <button class="key key-op" onclick="inputOp('+')">+</button>
+    </div>
+    <div class="keypad-row">
+      <button class="key key-func" onclick="inputNegate()">⁺⁄₋</button>
+      <button class="key key-num" onclick="inputDigit('0')">0</button>
+      <button class="key key-num" onclick="inputDot()">.</button>
+      <button class="key key-eq" onclick="inputEquals()">=</button>
+    </div>
+  </div>
+
+  <div class="history-panel" id="historyPanel">
+    <div class="history-header">
+      <span>历史记录</span>
+      <button class="history-close" onclick="toggleHistory()">✕</button>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="history-empty">尚无历史记录</div>
+    </div>
+    <div class="history-actions">
+      <button onclick="clearHistory()">清除历史记录</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var currentInput = '0';
+  var expression = '';
+  var operator = null;
+  var prevValue = null;
+  var waitingForOperand = false;
+  var justEvaluated = false;
+  var memory = 0;
+  var hasMemory = false;
+  var history = [];
+  var currentMode = 'standard';
+  var useDeg = true;
+
+  var elResult = document.getElementById('result');
+  var elExpr = document.getElementById('expression');
+  var elMemInd = document.getElementById('memIndicator');
+  var mcBtn = document.getElementById('mcBtn');
+  var mrBtn = document.getElementById('mrBtn');
+
+  function updateDisplay(){
+    var display = currentInput;
+    if(display === 'Error' || display === 'Infinity' || display === '-Infinity' || display === 'NaN'){
+      display = display === 'NaN' ? '无效输入' : display === 'Infinity' ? '溢出' : display === '-Infinity' ? '溢出' : display;
+    }
+    elResult.textContent = display;
+    elExpr.textContent = expression;
+    if(display.length > 14){
+      elResult.className = 'result smaller';
+    } else if(display.length > 10){
+      elResult.className = 'result small';
+    } else {
+      elResult.className = 'result';
+    }
+    mcBtn.disabled = !hasMemory;
+    mrBtn.disabled = !hasMemory;
+    elMemInd.textContent = hasMemory ? 'M' : '';
+  }
+
+  function formatNumber(n){
+    if(typeof n !== 'number' || isNaN(n)) return 'Error';
+    if(!isFinite(n)) return '溢出';
+    var s = String(n);
+    if(s.includes('e') || s.includes('E')) return s;
+    var parts = s.split('.');
+    var intPart = parts[0];
+    var decPart = parts[1];
+    var neg = intPart.startsWith('-');
+    if(neg) intPart = intPart.slice(1);
+    var formatted = '';
+    var count = 0;
+    for(var i = intPart.length - 1; i >= 0; i--){
+      if(count > 0 && count % 3 === 0) formatted = ',' + formatted;
+      formatted = intPart[i] + formatted;
+      count++;
+    }
+    if(neg) formatted = '-' + formatted;
+    if(decPart !== undefined) formatted += '.' + decPart;
+    return formatted;
+  }
+
+  function parseInput(s){
+    if(!s || s === 'Error' || s === '溢出' || s === '无效输入') return 0;
+    return parseFloat(s.replace(/,/g, ''));
+  }
+
+  function calculate(a, op, b){
+    switch(op){
+      case '+': return a + b;
+      case '−': return a - b;
+      case '×': return a * b;
+      case '÷':
+        if(b === 0) return NaN;
+        return a / b;
+      default: return b;
+    }
+  }
+
+  function factorial(n){
+    if(n < 0 || n !== Math.floor(n)) return NaN;
+    if(n > 170) return Infinity;
+    var r = 1;
+    for(var i = 2; i <= n; i++) r *= i;
+    return r;
+  }
+
+  function toRad(deg){ return deg * Math.PI / 180; }
+
+  function applySci(fn, val){
+    var v = val;
+    switch(fn){
+      case 'x²': return v * v;
+      case 'x³': return v * v * v;
+      case '1/x': return v === 0 ? NaN : 1 / v;
+      case '2√x': return v < 0 ? NaN : Math.sqrt(v);
+      case 'ln': return v <= 0 ? NaN : Math.log(v);
+      case 'log': return v <= 0 ? NaN : Math.log10(v);
+      case 'n!': return factorial(v);
+      case 'sin': return Math.sin(useDeg ? toRad(v) : v);
+      case 'cos': return Math.cos(useDeg ? toRad(v) : v);
+      case 'tan': return Math.tan(useDeg ? toRad(v) : v);
+      case 'sinh': return Math.sinh(v);
+      case 'cosh': return Math.cosh(v);
+      case 'tanh': return Math.tanh(v);
+      case '|x|': return Math.abs(v);
+      case 'floor': return Math.floor(v);
+      case 'ceil': return Math.ceil(v);
+      case '10ˣ': return Math.pow(10, v);
+      case 'eˣ': return Math.exp(v);
+      case 'dms': {
+        var sign = v < 0 ? -1 : 1;
+        v = Math.abs(v);
+        var d = Math.floor(v);
+        var m = Math.floor((v - d) * 60);
+        var s = ((v - d) * 60 - m) * 60;
+        return sign * (d + m / 100 + s / 10000);
+      }
+      case 'deg': {
+        var sign2 = v < 0 ? -1 : 1;
+        v = Math.abs(v);
+        var d2 = Math.floor(v);
+        var m2 = Math.floor((v - d2) * 100);
+        var s2 = (v - d2) * 100 - m2;
+        return sign2 * (d2 + m2 / 60 + s2 / 3600);
+      }
+      default: return v;
+    }
+  }
+
+  window.inputDigit = function(d){
+    if(justEvaluated){
+      currentInput = '0';
+      expression = '';
+      justEvaluated = false;
+    }
+    if(waitingForOperand){
+      currentInput = '0';
+      waitingForOperand = false;
+    }
+    if(currentInput === '0' && d !== '0'){
+      currentInput = d;
+    } else if(currentInput === '0' && d === '0'){
+      // stay 0
+    } else {
+      if(currentInput.replace(/[^0-9]/g, '').length >= 16) return;
+      currentInput += d;
+    }
+    updateDisplay();
+  };
+
+  window.inputDot = function(){
+    if(justEvaluated){
+      currentInput = '0.';
+      expression = '';
+      justEvaluated = false;
+      waitingForOperand = false;
+      updateDisplay();
+      return;
+    }
+    if(waitingForOperand){
+      currentInput = '0.';
+      waitingForOperand = false;
+      updateDisplay();
+      return;
+    }
+    if(!currentInput.includes('.')){
+      currentInput += '.';
+    }
+    updateDisplay();
+  };
+
+  window.inputOp = function(op){
+    var val = parseInput(currentInput);
+    if(justEvaluated){
+      expression = formatNumber(val) + ' ' + op + ' ';
+      prevValue = val;
+      operator = op;
+      waitingForOperand = true;
+      justEvaluated = false;
+      updateDisplay();
+      return;
+    }
+    if(prevValue !== null && operator && !waitingForOperand){
+      var result = calculate(prevValue, operator, val);
+      if(isNaN(result) || !isFinite(result)){
+        currentInput = isNaN(result) ? '无效输入' : '溢出';
+        expression = '';
+        prevValue = null;
+        operator = null;
+        waitingForOperand = false;
+        updateDisplay();
+        return;
+      }
+      currentInput = formatNumber(result);
+      prevValue = result;
+      expression = formatNumber(result) + ' ' + op + ' ';
+    } else {
+      prevValue = val;
+      expression = formatNumber(val) + ' ' + op + ' ';
+    }
+    operator = op;
+    waitingForOperand = true;
+    updateDisplay();
+  };
+
+  window.inputEquals = function(){
+    var val = parseInput(currentInput);
+    if(prevValue !== null && operator){
+      var result = calculate(prevValue, operator, val);
+      var fullExpr = formatNumber(prevValue) + ' ' + operator + ' ' + formatNumber(val) + ' =';
+      if(isNaN(result) || !isFinite(result)){
+        addHistory(fullExpr, isNaN(result) ? '无效输入' : '溢出');
+        currentInput = isNaN(result) ? '无效输入' : '溢出';
+        expression = fullExpr;
+        prevValue = null;
+        operator = null;
+        waitingForOperand = false;
+        justEvaluated = true;
+        updateDisplay();
+        return;
+      }
+      addHistory(fullExpr, formatNumber(result));
+      expression = fullExpr;
+      currentInput = formatNumber(result);
+      prevValue = null;
+      operator = null;
+      waitingForOperand = false;
+      justEvaluated = true;
+    }
+    updateDisplay();
+  };
+
+  window.inputClear = function(){
+    currentInput = '0';
+    expression = '';
+    operator = null;
+    prevValue = null;
+    waitingForOperand = false;
+    justEvaluated = false;
+    updateDisplay();
+  };
+
+  window.inputCE = function(){
+    currentInput = '0';
+    waitingForOperand = false;
+    updateDisplay();
+  };
+
+  window.inputBackspace = function(){
+    if(justEvaluated || waitingForOperand) return;
+    if(currentInput.length > 1){
+      currentInput = currentInput.slice(0, -1);
+      if(currentInput === '-') currentInput = '0';
+    } else {
+      currentInput = '0';
+    }
+    updateDisplay();
+  };
+
+  window.inputNegate = function(){
+    var val = parseInput(currentInput);
+    if(val === 0) return;
+    val = -val;
+    currentInput = formatNumber(val);
+    updateDisplay();
+  };
+
+  window.inputPercent = function(){
+    var val = parseInput(currentInput);
+    if(prevValue !== null && (operator === '+' || operator === '−')){
+      val = prevValue * val / 100;
+    } else {
+      val = val / 100;
+    }
+    currentInput = formatNumber(val);
+    updateDisplay();
+  };
+
+  window.inputReciprocal = function(){
+    var val = parseInput(currentInput);
+    if(val === 0){
+      currentInput = '无效输入';
+      updateDisplay();
+      return;
+    }
+    var result = 1 / val;
+    expression = '1/(' + formatNumber(val) + ')';
+    currentInput = formatNumber(result);
+    justEvaluated = true;
+    updateDisplay();
+  };
+
+  window.inputSquare = function(){
+    var val = parseInput(currentInput);
+    var result = val * val;
+    expression = 'sqr(' + formatNumber(val) + ')';
+    currentInput = formatNumber(result);
+    justEvaluated = true;
+    updateDisplay();
+  };
+
+  window.inputSqrt = function(){
+    var val = parseInput(currentInput);
+    if(val < 0){
+      currentInput = '无效输入';
+      updateDisplay();
+      return;
+    }
+    var result = Math.sqrt(val);
+    expression = '√(' + formatNumber(val) + ')';
+    currentInput = formatNumber(result);
+    justEvaluated = true;
+    updateDisplay();
+  };
+
+  window.inputSci = function(fn){
+    var val = parseInput(currentInput);
+    if(fn === 'π'){
+      currentInput = formatNumber(Math.PI);
+      if(waitingForOperand) waitingForOperand = false;
+      updateDisplay();
+      return;
+    }
+    if(fn === 'e'){
+      currentInput = formatNumber(Math.E);
+      if(waitingForOperand) waitingForOperand = false;
+      updateDisplay();
+      return;
+    }
+    if(fn === 'Rand'){
+      currentInput = formatNumber(Math.random());
+      if(waitingForOperand) waitingForOperand = false;
+      justEvaluated = true;
+      updateDisplay();
+      return;
+    }
+    if(fn === 'deg'){
+      useDeg = !useDeg;
+      updateDisplay();
+      return;
+    }
+    var result = applySci(fn, val);
+    if(isNaN(result)){
+      currentInput = '无效输入';
+    } else if(!isFinite(result)){
+      currentInput = '溢出';
+    } else {
+      currentInput = formatNumber(result);
+    }
+    expression = fn + '(' + formatNumber(val) + ')';
+    justEvaluated = true;
+    updateDisplay();
+  };
+
+  window.memClear = function(){
+    memory = 0;
+    hasMemory = false;
+    updateDisplay();
+  };
+
+  window.memRecall = function(){
+    if(hasMemory){
+      currentInput = formatNumber(memory);
+      waitingForOperand = false;
+      updateDisplay();
+    }
+  };
+
+  window.memAdd = function(){
+    var val = parseInput(currentInput);
+    memory += val;
+    hasMemory = true;
+    updateDisplay();
+  };
+
+  window.memSub = function(){
+    var val = parseInput(currentInput);
+    memory -= val;
+    hasMemory = true;
+    updateDisplay();
+  };
+
+  window.memStore = function(){
+    var val = parseInput(currentInput);
+    memory = val;
+    hasMemory = true;
+    updateDisplay();
+  };
+
+  window.toggleMemView = function(){};
+
+  function addHistory(expr, result){
+    history.unshift({expr: expr, result: result});
+    if(history.length > 50) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory(){
+    var list = document.getElementById('historyList');
+    if(history.length === 0){
+      list.innerHTML = '<div class="history-empty">尚无历史记录</div>';
+      return;
+    }
+    list.innerHTML = history.map(function(h, i){
+      return '<div class="history-item" onclick="useHistory(' + i + ')">' +
+        '<div class="history-expr">' + escHtml(h.expr) + '</div>' +
+        '<div class="history-result">' + escHtml(h.result) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function escHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  window.useHistory = function(i){
+    var h = history[i];
+    currentInput = h.result;
+    waitingForOperand = false;
+    justEvaluated = true;
+    updateDisplay();
+  };
+
+  window.clearHistory = function(){
+    history = [];
+    renderHistory();
+  };
+
+  window.toggleHistory = function(){
+    var panel = document.getElementById('historyPanel');
+    panel.classList.toggle('open');
+  };
+
+  window.setMode = function(mode){
+    currentMode = mode;
+    var sciPanel = document.getElementById('sciPanel');
+    var title = document.getElementById('modeTitle');
+    var navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(function(item){ item.classList.remove('active'); });
+    if(mode === 'scientific'){
+      sciPanel.classList.add('visible');
+      title.textContent = '科学';
+      navItems[1].classList.add('active');
+    } else {
+      sciPanel.classList.remove('visible');
+      title.textContent = '标准';
+      navItems[0].classList.add('active');
+    }
+    toggleNav(false);
+    inputClear();
+  };
+
+  window.toggleNav = function(open){
+    var menu = document.getElementById('navMenu');
+    var overlay = document.getElementById('navOverlay');
+    if(open){
+      menu.classList.add('open');
+      overlay.classList.add('open');
+    } else {
+      menu.classList.remove('open');
+      overlay.classList.remove('open');
+    }
+  };
+
+  window.toggleTheme = function(){
+    var app = document.getElementById('app');
+    var btn = document.getElementById('themeBtn');
+    if(app.getAttribute('data-theme') === 'dark'){
+      app.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+    } else {
+      app.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️';
+    }
+  };
+
+  document.addEventListener('keydown', function(e){
+    var key = e.key;
+    if(key >= '0' && key <= '9'){
+      inputDigit(key);
+      e.preventDefault();
+    } else if(key === '.'){
+      inputDot();
+      e.preventDefault();
+    } else if(key === '+'){
+      inputOp('+');
+      e.preventDefault();
+    } else if(key === '-'){
+      inputOp('−');
+      e.preventDefault();
+    } else if(key === '*'){
+      inputOp('×');
+      e.preventDefault();
+    } else if(key === '/'){
+      inputOp('÷');
+      e.preventDefault();
+    } else if(key === 'Enter' || key === '='){
+      inputEquals();
+      e.preventDefault();
+    } else if(key === 'Backspace'){
+      inputBackspace();
+      e.preventDefault();
+    } else if(key === 'Escape'){
+      inputClear();
+      e.preventDefault();
+    } else if(key === 'Delete'){
+      inputCE();
+      e.preventDefault();
+    } else if(key === '%'){
+      inputPercent();
+      e.preventDefault();
+    }
+  });
+
+  updateDisplay();
+})();
+</script>
+</body>
+</html>
