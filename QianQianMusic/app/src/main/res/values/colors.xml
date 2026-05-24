@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="qianqian_blue">#FF1E90FF</color>
+    <color name="qianqian_blue_dark">#FF1565C0</color>
+    <color name="qianqian_blue_light">#FF64B5F6</color>
+    <color name="qianqian_bg">#FFE8F0FE</color>
+    <color name="qianqian_bg_dark">#FF0D1B2A</color>
+    <color name="qianqian_surface">#FFFFFFFF</color>
+    <color name="qianqian_surface_dark">#FF1B2838</color>
+    <color name="qianqian_text_primary">#FF1A1A2E</color>
+    <color name="qianqian_text_secondary">#FF6B7280</color>
+    <color name="qianqian_text_light">#FFFFFFFF</color>
+    <color name="qianqian_accent">#FF00BFFF</color>
+    <color name="qianqian_divider">#FFE0E0E0</color>
+    <color name="qianqian_control_bg">#CC0D1B2A</color>
+    <color name="qianqian_progress_bg">#33FFFFFF</color>
+    <color name="qianqian_lrc_highlight">#FF00E5FF</color>
+    <color name="qianqian_lrc_normal">#99FFFFFF</color>
+    <color name="qianqian_item_pressed">#1A1E90FF</color>
+    <color name="qianqian_gradient_start">#FF0D1B2A</color>
+    <color name="qianqian_gradient_end">#FF1A237E</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="transparent">#00000000</color>
+</resources>

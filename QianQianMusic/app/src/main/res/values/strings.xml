@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">千千静听</string>
+    <string name="no_music_hint">未找到音乐文件\n请将MP3文件复制到手机中</string>
+    <string name="permission_required">需要存储权限才能扫描音乐文件</string>
+    <string name="play_mode_sequence">顺序播放</string>
+    <string name="play_mode_loop">列表循环</string>
+    <string name="play_mode_shuffle">随机播放</string>
+    <string name="play_mode_single">单曲循环</string>
+    <string name="tab_playlist">播放列表</string>
+    <string name="tab_lyrics">歌词</string>
+    <string name="no_lyrics">暂无歌词</string>
+    <string name="scanning">正在扫描音乐…</string>
+    <string name="song_count">共 %d 首歌曲</string>
+</resources>

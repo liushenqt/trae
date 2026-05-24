@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.QianQianMusic" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/qianqian_blue</item>
+        <item name="colorPrimaryDark">@color/qianqian_blue_dark</item>
+        <item name="colorAccent">@color/qianqian_accent</item>
+        <item name="android:windowBackground">@color/qianqian_bg_dark</item>
+        <item name="android:statusBarColor">@color/qianqian_bg_dark</item>
+        <item name="android:navigationBarColor">@color/qianqian_bg_dark</item>
+    </style>
+</resources>
