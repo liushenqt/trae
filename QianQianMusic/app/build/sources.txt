@@ -1,0 +1,11 @@
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/MainActivity.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/view/LrcView.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/adapter/SongAdapter.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/service/MediaButtonReceiver.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/service/MusicService.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/LyricsFragment.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/model/Song.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/util/LrcParser.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/util/MusicScanner.java
+/workspace/QianQianMusic/app/src/main/java/com/qianqian/music/PlaylistFragment.java
+/workspace/QianQianMusic/app/build/gen/com/qianqian/music/R.java

@@ -10,18 +10,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaPlayer;
+import android.media.MediaMetadata;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
-
-import androidx.core.app.NotificationCompat;
-import androidx.media.session.MediaButtonReceiver;
 
 import com.qianqian.music.MainActivity;
 import com.qianqian.music.R;
@@ -50,7 +47,7 @@ public class MusicService extends Service {
     private static final int NOTIFICATION_ID = 1;
 
     private MediaPlayer mediaPlayer;
-    private MediaSessionCompat mediaSession;
+    private MediaSession mediaSession;
     private Handler handler;
     private List<Song> playlist = new ArrayList<>();
     private List<LrcParser.LrcLine> currentLrcLines = new ArrayList<>();
@@ -73,20 +70,15 @@ public class MusicService extends Service {
         initMediaPlayer();
         initMediaSession();
         createNotificationChannel();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_PLAY_PAUSE);
+        filter.addAction(ACTION_NEXT);
+        filter.addAction(ACTION_PREVIOUS);
+        filter.addAction(ACTION_STOP);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(notificationReceiver, new IntentFilter[]{
-                    new IntentFilter(ACTION_PLAY_PAUSE),
-                    new IntentFilter(ACTION_NEXT),
-                    new IntentFilter(ACTION_PREVIOUS),
-                    new IntentFilter(ACTION_STOP)
-            }, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(notificationReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
-            registerReceiver(notificationReceiver, new IntentFilter[]{
-                    new IntentFilter(ACTION_PLAY_PAUSE),
-                    new IntentFilter(ACTION_NEXT),
-                    new IntentFilter(ACTION_PREVIOUS),
-                    new IntentFilter(ACTION_STOP)
-            });
+            registerReceiver(notificationReceiver, filter);
         }
     }
 
@@ -118,8 +110,8 @@ public class MusicService extends Service {
     }
 
     private void initMediaSession() {
-        mediaSession = new MediaSessionCompat(this, "QianQianMusic");
-        mediaSession.setCallback(new MediaSessionCompat.Callback() {
+        mediaSession = new MediaSession(this, "QianQianMusic");
+        mediaSession.setCallback(new MediaSession.Callback() {
             @Override
             public void onPlay() {
                 resume();
@@ -207,20 +199,29 @@ public class MusicService extends Service {
 
         int playPauseIcon = isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play;
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(title)
+        Intent deleteIntent = new Intent(ACTION_STOP);
+        PendingIntent deletePendingIntent = PendingIntent.getBroadcast(this, ACTION_STOP.hashCode(),
+                deleteIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new Notification.Builder(this, CHANNEL_ID);
+        } else {
+            builder = new Notification.Builder(this);
+            builder.setPriority(Notification.PRIORITY_LOW);
+        }
+
+        builder.setContentTitle(title)
                 .setContentText(artist)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(contentPendingIntent)
-                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        this, PlaybackStateCompat.ACTION_STOP))
+                .setDeleteIntent(deletePendingIntent)
                 .addAction(R.drawable.ic_previous, "上一首", prevPendingIntent)
                 .addAction(playPauseIcon, isPlaying() ? "暂停" : "播放", playPausePendingIntent)
                 .addAction(R.drawable.ic_next, "下一首", nextPendingIntent)
-                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                .setStyle(new Notification.MediaStyle()
                         .setMediaSession(mediaSession.getSessionToken())
                         .setShowActionsInCompactView(0, 1, 2))
-                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOnlyAlertOnce(true)
                 .setOngoing(isPlaying());
 
@@ -244,26 +245,26 @@ public class MusicService extends Service {
         Song song = getCurrentSong();
         if (song == null) return;
 
-        MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.getDisplayName())
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.getArtistDisplay())
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.getAlbumDisplay())
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.getDuration());
+        MediaMetadata.Builder metadataBuilder = new MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, song.getDisplayName())
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, song.getArtistDisplay())
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, song.getAlbumDisplay())
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, song.getDuration());
 
         mediaSession.setMetadata(metadataBuilder.build());
     }
 
     private void updateMediaSessionPlaybackState() {
-        int state = isPlaying() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
+        int state = isPlaying() ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
         long position = mediaPlayer != null ? mediaPlayer.getCurrentPosition() : 0;
 
-        PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_PLAY |
-                        PlaybackStateCompat.ACTION_PAUSE |
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
-                        PlaybackStateCompat.ACTION_SEEK_TO |
-                        PlaybackStateCompat.ACTION_STOP)
+        PlaybackState.Builder stateBuilder = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY |
+                        PlaybackState.ACTION_PAUSE |
+                        PlaybackState.ACTION_SKIP_TO_NEXT |
+                        PlaybackState.ACTION_SKIP_TO_PREVIOUS |
+                        PlaybackState.ACTION_SEEK_TO |
+                        PlaybackState.ACTION_STOP)
                 .setState(state, position, 1.0f);
 
         mediaSession.setPlaybackState(stateBuilder.build());
@@ -446,9 +447,6 @@ public class MusicService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null) {
-            MediaButtonReceiver.handleIntent(mediaSession, intent);
-        }
         startForeground(NOTIFICATION_ID, buildNotification());
         return START_STICKY;
     }

@@ -1,46 +1,28 @@
 package com.qianqian.music;
 
-import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import android.widget.ListView;
 
 import com.qianqian.music.adapter.SongAdapter;
 import com.qianqian.music.model.Song;
 
 import java.util.List;
 
-public class PlaylistFragment extends Fragment {
+public class PlaylistFragment {
 
-    private RecyclerView recyclerView;
+    private ListView listView;
     private LinearLayout layoutEmpty;
     private LinearLayout layoutScanning;
     private SongAdapter adapter;
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_playlist, container, false);
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        recyclerView = view.findViewById(R.id.recyclerView);
+    public PlaylistFragment(View view) {
+        listView = view.findViewById(R.id.listView);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
         layoutScanning = view.findViewById(R.id.layoutScanning);
 
-        adapter = new SongAdapter();
-        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerView.setAdapter(adapter);
+        adapter = new SongAdapter(view.getContext());
+        listView.setAdapter(adapter);
     }
 
     public void setSongs(List<Song> songs) {
@@ -57,8 +39,12 @@ public class PlaylistFragment extends Fragment {
     }
 
     public void setOnSongClickListener(SongAdapter.OnSongClickListener listener) {
-        if (adapter != null) {
-            adapter.setOnSongClickListener(listener);
+        if (listView != null) {
+            listView.setOnItemClickListener((parent, view, position, id) -> {
+                if (listener != null && adapter != null) {
+                    listener.onSongClick(position, (Song) adapter.getItem(position));
+                }
+            });
         }
     }
 
@@ -67,11 +53,11 @@ public class PlaylistFragment extends Fragment {
             layoutScanning.setVisibility(scanning ? View.VISIBLE : View.GONE);
         }
         if (layoutEmpty != null && !scanning) {
-            layoutEmpty.setVisibility((adapter == null || adapter.getItemCount() == 0)
+            layoutEmpty.setVisibility((adapter == null || adapter.getCount() == 0)
                     ? View.VISIBLE : View.GONE);
         }
-        if (recyclerView != null && scanning) {
-            recyclerView.setVisibility(View.GONE);
+        if (listView != null && scanning) {
+            listView.setVisibility(View.GONE);
         }
     }
 
@@ -79,8 +65,8 @@ public class PlaylistFragment extends Fragment {
         if (layoutEmpty != null) {
             layoutEmpty.setVisibility((songs == null || songs.isEmpty()) ? View.VISIBLE : View.GONE);
         }
-        if (recyclerView != null) {
-            recyclerView.setVisibility((songs == null || songs.isEmpty()) ? View.GONE : View.VISIBLE);
+        if (listView != null) {
+            listView.setVisibility((songs == null || songs.isEmpty()) ? View.GONE : View.VISIBLE);
         }
         if (layoutScanning != null) {
             layoutScanning.setVisibility(View.GONE);

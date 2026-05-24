@@ -1,13 +1,12 @@
 package com.qianqian.music.adapter;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.qianqian.music.R;
 import com.qianqian.music.model.Song;
@@ -15,14 +14,19 @@ import com.qianqian.music.model.Song;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder> {
+public class SongAdapter extends BaseAdapter {
 
     private List<Song> songs = new ArrayList<>();
     private int currentPlayingIndex = -1;
     private OnSongClickListener listener;
+    private Context context;
 
     public interface OnSongClickListener {
         void onSongClick(int position, Song song);
+    }
+
+    public SongAdapter(Context context) {
+        this.context = context;
     }
 
     public void setSongs(List<Song> songs) {
@@ -31,30 +35,46 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
     }
 
     public void setCurrentPlayingIndex(int index) {
-        int oldIndex = this.currentPlayingIndex;
         this.currentPlayingIndex = index;
-        if (oldIndex >= 0) {
-            notifyItemChanged(oldIndex);
-        }
-        if (index >= 0) {
-            notifyItemChanged(index);
-        }
+        notifyDataSetChanged();
     }
 
     public void setOnSongClickListener(OnSongClickListener listener) {
         this.listener = listener;
     }
 
-    @NonNull
     @Override
-    public SongViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_song, parent, false);
-        return new SongViewHolder(view);
+    public int getCount() {
+        return songs.size();
     }
 
     @Override
-    public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
+    public Object getItem(int position) {
+        return songs.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+        if (convertView == null) {
+            convertView = LayoutInflater.from(context)
+                    .inflate(R.layout.item_song, parent, false);
+            holder = new ViewHolder();
+            holder.ivAlbumArt = convertView.findViewById(R.id.ivAlbumArt);
+            holder.tvTitle = convertView.findViewById(R.id.tvTitle);
+            holder.tvArtist = convertView.findViewById(R.id.tvArtist);
+            holder.tvDuration = convertView.findViewById(R.id.tvDuration);
+            holder.ivPlaying = convertView.findViewById(R.id.ivPlaying);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
         Song song = songs.get(position);
         holder.tvTitle.setText(song.getDisplayName());
         holder.tvArtist.setText(song.getArtistDisplay());
@@ -63,35 +83,15 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         boolean isPlaying = position == currentPlayingIndex;
         holder.ivPlaying.setVisibility(isPlaying ? View.VISIBLE : View.GONE);
         holder.tvTitle.setTextColor(isPlaying ? 0xFF00E5FF : 0xFFFFFFFF);
+
+        return convertView;
     }
 
-    @Override
-    public int getItemCount() {
-        return songs.size();
-    }
-
-    class SongViewHolder extends RecyclerView.ViewHolder {
-
+    static class ViewHolder {
         ImageView ivAlbumArt;
         TextView tvTitle;
         TextView tvArtist;
         TextView tvDuration;
         ImageView ivPlaying;
-
-        SongViewHolder(@NonNull View itemView) {
-            super(itemView);
-            ivAlbumArt = itemView.findViewById(R.id.ivAlbumArt);
-            tvTitle = itemView.findViewById(R.id.tvTitle);
-            tvArtist = itemView.findViewById(R.id.tvArtist);
-            tvDuration = itemView.findViewById(R.id.tvDuration);
-            ivPlaying = itemView.findViewById(R.id.ivPlaying);
-
-            itemView.setOnClickListener(v -> {
-                int pos = getAdapterPosition();
-                if (pos != RecyclerView.NO_POSITION && listener != null) {
-                    listener.onSongClick(pos, songs.get(pos));
-                }
-            });
-        }
     }
 }

@@ -1,6 +1,7 @@
 package com.qianqian.music;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -11,21 +12,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
-import androidx.viewpager2.adapter.FragmentStateAdapter;
-import androidx.viewpager2.widget.ViewPager2;
-
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 import com.qianqian.music.model.Song;
 import com.qianqian.music.service.MusicService;
 import com.qianqian.music.util.LrcParser;
@@ -34,12 +28,13 @@ import com.qianqian.music.util.MusicScanner;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private static final int PERMISSION_REQUEST_CODE = 100;
 
-    private TabLayout tabLayout;
-    private ViewPager2 viewPager;
+    private TextView tabPlaylist;
+    private TextView tabLyrics;
+    private FrameLayout contentContainer;
     private SeekBar seekBar;
     private TextView tvCurrentTime;
     private TextView tvTotalTime;
@@ -54,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvNowPlayingArtist;
     private ImageButton btnNowPlayingPlayPause;
 
+    private View playlistView;
+    private View lyricsView;
     private PlaylistFragment playlistFragment;
     private LyricsFragment lyricsFragment;
 
@@ -85,14 +82,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         initViews();
-        setupViewPager();
+        setupTabs();
         setupControls();
         checkPermissionAndScan();
     }
 
     private void initViews() {
-        tabLayout = findViewById(R.id.tabLayout);
-        viewPager = findViewById(R.id.viewPager);
+        tabPlaylist = findViewById(R.id.tabPlaylist);
+        tabLyrics = findViewById(R.id.tabLyrics);
+        contentContainer = findViewById(R.id.contentContainer);
         seekBar = findViewById(R.id.seekBar);
         tvCurrentTime = findViewById(R.id.tvCurrentTime);
         tvTotalTime = findViewById(R.id.tvTotalTime);
@@ -106,30 +104,37 @@ public class MainActivity extends AppCompatActivity {
         tvNowPlayingTitle = findViewById(R.id.tvNowPlayingTitle);
         tvNowPlayingArtist = findViewById(R.id.tvNowPlayingArtist);
         btnNowPlayingPlayPause = findViewById(R.id.btnNowPlayingPlayPause);
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        playlistView = inflater.inflate(R.layout.fragment_playlist, contentContainer, false);
+        lyricsView = inflater.inflate(R.layout.fragment_lyrics, contentContainer, false);
+
+        contentContainer.addView(playlistView);
+        contentContainer.addView(lyricsView);
+
+        playlistFragment = new PlaylistFragment(playlistView);
+        lyricsFragment = new LyricsFragment(lyricsView);
+
+        lyricsView.setVisibility(View.GONE);
     }
 
-    private void setupViewPager() {
-        playlistFragment = new PlaylistFragment();
-        lyricsFragment = new LyricsFragment();
+    private void setupTabs() {
+        tabPlaylist.setOnClickListener(v -> switchTab(0));
+        tabLyrics.setOnClickListener(v -> switchTab(1));
+    }
 
-        FragmentStateAdapter adapter = new FragmentStateAdapter(this) {
-            @NonNull
-            @Override
-            public Fragment createFragment(int position) {
-                return position == 0 ? playlistFragment : lyricsFragment;
-            }
-
-            @Override
-            public int getItemCount() {
-                return 2;
-            }
-        };
-
-        viewPager.setAdapter(adapter);
-
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            tab.setText(position == 0 ? R.string.tab_playlist : R.string.tab_lyrics);
-        }).attach();
+    private void switchTab(int position) {
+        if (position == 0) {
+            playlistView.setVisibility(View.VISIBLE);
+            lyricsView.setVisibility(View.GONE);
+            tabPlaylist.setTextColor(getColor(R.color.qianqian_accent));
+            tabLyrics.setTextColor(getColor(R.color.qianqian_text_secondary));
+        } else {
+            playlistView.setVisibility(View.GONE);
+            lyricsView.setVisibility(View.VISIBLE);
+            tabPlaylist.setTextColor(getColor(R.color.qianqian_text_secondary));
+            tabLyrics.setTextColor(getColor(R.color.qianqian_accent));
+        }
     }
 
     private void setupControls() {
@@ -152,9 +157,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnPlayMode.setOnClickListener(v -> cyclePlayMode());
 
-        btnPlaylist.setOnClickListener(v -> {
-            viewPager.setCurrentItem(0, true);
-        });
+        btnPlaylist.setOnClickListener(v -> switchTab(0));
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -231,17 +234,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPermissionAndScan() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
+                requestPermissions(
                         new String[]{Manifest.permission.READ_MEDIA_AUDIO},
                         PERMISSION_REQUEST_CODE);
                 return;
             }
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
+                requestPermissions(
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                         PERMISSION_REQUEST_CODE);
                 return;
@@ -251,8 +254,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
